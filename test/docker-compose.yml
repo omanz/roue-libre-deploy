@@ -1,0 +1,63 @@
+version: '3.8'
+services:
+  blog:
+    image: ghcr.io/omanz/roue-libre-blog:feature-add-caddy
+    container_name: blog_test
+    environment:
+      - DB_PASS=${DB_PASS}
+      - DB_USER=${DB_USER}
+      - DB_HOST=${DB_HOST}
+      - BLOG_AUTH_USERNAME=${BLOG_AUTH_USERNAME}
+      - BLOG_AUTH_PASSWORD=${BLOG_AUTH_PASSWORD}
+      - BLOG_HOST=${BLOG_HOST}
+    restart: on-failure
+    volumes:
+      - tmp-photo:${TPM_PHOTOS_PATH}
+      - photos:${PUBLIC_PHOTOS_PATH}
+    depends_on:
+      - mariadb
+    networks:
+      - olivia_default
+
+  upload_tool:
+    container_name: upload_tool_test
+    image: ghcr.io/omanz/roue-libre-uploadtool:feature-git-action
+    environment:
+      - UPLOAD_TOOL_AUTH_PASSWORD=${UPLOAD_TOOL_AUTH_PASSWORD}
+      - UPLOAD_TOOL_AUTH_USERNAME=${UPLOAD_TOOL_AUTH_USERNAME}
+      - BLOG_AUTH_USERNAME=${BLOG_AUTH_USERNAME}
+      - BLOG_AUTH_PASSWORD=${BLOG_AUTH_PASSWORD}
+      - BLOG_HOST=${BLOG_HOST}
+    restart: on-failure
+    volumes:
+      - tmp-photo:${TPM_PHOTOS_PATH}
+    networks:
+      - olivia_default
+
+  mariadb:
+    image: mariadb:11.3
+    container_name: mariadb_test
+
+    environment:
+      - MYSQL_DATABASE=blog
+      - MYSQL_ROOT_HOST=${DB_HOST}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+      - MYSQL_ROOT_PASSWORD=${DB_PASS}
+    volumes:
+      - database_mysql:/var/lib/mysql
+      - ./blog:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password 
+    networks:
+      - olivia_default
+volumes:
+  database_mysql:
+  tmp-photo:
+  photos:
+  caddy-config:
+  caddy-data:
+  
+networks:
+  olivia_default:
+     external: true
+
